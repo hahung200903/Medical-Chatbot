@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../core/widgets/custom_text_field.dart'; 
+import '../../core/widgets/custom_text_field.dart';
 import '../../core/widgets/primary_button.dart';
 import '../history/history_screen.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -25,13 +26,11 @@ class LoginScreen extends StatelessWidget {
                   color: Colors.teal),
             ),
             const SizedBox(height: 40),
-
             const CustomTextField(label: "Email", icon: Icons.email),
             const SizedBox(height: 15),
             const CustomTextField(
                 label: "Mật khẩu", icon: Icons.lock, isPassword: true),
             const SizedBox(height: 30),
-
             PrimaryButton(
               text: "Đăng nhập",
               onPressed: () {
@@ -42,9 +41,15 @@ class LoginScreen extends StatelessWidget {
                 );
               },
             ),
-
             TextButton(
-              onPressed: () {},
+              onPressed: () {
+                // Chuyển sang màn hình Đăng ký
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const RegisterScreen()),
+                );
+              },
               child: const Text("Chưa có tài khoản? Đăng ký ngay"),
             ),
           ],

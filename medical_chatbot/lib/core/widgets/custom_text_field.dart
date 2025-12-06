@@ -5,6 +5,9 @@ class CustomTextField extends StatelessWidget {
   final IconData icon;
   final bool isPassword;
   final TextEditingController? controller;
+  final TextInputType keyboardType;
+  final TextInputAction textInputAction;
+  final ValueChanged<String>? onChanged;
 
   const CustomTextField({
     super.key,
@@ -12,6 +15,9 @@ class CustomTextField extends StatelessWidget {
     required this.icon,
     this.isPassword = false,
     this.controller,
+    this.keyboardType = TextInputType.text,
+    this.textInputAction = TextInputAction.next,
+    this.onChanged,
   });
 
   @override
@@ -19,6 +25,9 @@ class CustomTextField extends StatelessWidget {
     return TextField(
       controller: controller,
       obscureText: isPassword,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),

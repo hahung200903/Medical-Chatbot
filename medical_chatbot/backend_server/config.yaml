@@ -1,0 +1,29 @@
+CHAT_MODEL_ID: "gemini-2.5-flash"
+
+VECTOR_DB_SENTENCE_EMBEDDING_MODEL: "sentence-transformers/all-MiniLM-L6-v2"
+VECTOR_DB_COLLECTION_NAME: "ake"
+VECTOR_DB_COLLECTION_PATH: "./chroma_langchain_db"
+DOCUMENT_DATA_TEST_PATH: "data/name_entities_data.csv"
+DOCUMENT_DATA_PATH: "data/disease_name_with_id_v2.csv"
+PINECONE_INDEX_HOST: "https://ake-dqv5otw.svc.aped-4627-b74a.pinecone.io"
+PINECONE_NAME_SPACE: "ake"
+PINECONE_INDEX_HOST_V2: "https://ake-v2-dqv5otw.svc.aped-4627-b74a.pinecone.io"
+
+SPOKE_BASE_URL: "https://spoke.rbvi.ucsf.edu/api/v1/"
+
+# SPOKE-API params
+DATA_SPOKE_TYPES_PATH: "data/data_spoke_types.json"
+cutoff_Compound_max_phase: 3
+cutoff_Protein_source: ["SwissProt"]
+cutoff_DaG_diseases_sources: ["knowledge", "experiments"]
+cutoff_DaG_textmining: 3
+cutoff_CtD_phase: 3
+cutoff_PiP_confidence: 0.7
+cutoff_ACTeG_level: ["Low", "Medium", "High"]
+depth: 1
+cutoff_DpL_average_prevalence: 0.001
+
+SIMILARITY_THRESHOLDS: 0.7
+AMBIGUITY_THRESHOLD: 0.1
+
+CONTEXT_QUALITY_THRESHOLDS: 0.6
