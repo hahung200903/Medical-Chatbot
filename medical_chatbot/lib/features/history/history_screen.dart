@@ -12,29 +12,35 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  // Danh sách lịch sử tư vấn
   final List<Map<String, dynamic>> _chatSessions = [
     {
       "title": "Tư vấn đau đầu (10:30 AM)",
       "id": "session_001",
-      "messages": <ChatMessage>[]
+      "messages": <ChatMessage>[],
     },
     {
       "title": "Đau dạ dày cấp (Hôm qua)",
       "id": "session_002",
-      "messages": <ChatMessage>[]
+      "messages": <ChatMessage>[],
     },
     {
       "title": "Hỏi về vắc xin cúm (20/11)",
       "id": "session_003",
-      "messages": <ChatMessage>[]
+      "messages": <ChatMessage>[],
     },
   ];
 
   // Thêm session mới
   void _addNewSession(String title, String id, List<ChatMessage> messages) {
     setState(() {
-      _chatSessions.insert(0, {"title": title, "id": id, "messages": messages});
+      _chatSessions.insert(
+        0,
+        {
+          "title": title,
+          "id": id,
+          "messages": messages,
+        },
+      );
     });
   }
 
@@ -50,17 +56,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text("Hủy"),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               setState(() {
                 _chatSessions.removeAt(index);
               });
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Đã xóa cuộc trò chuyện")),
-              );
             },
-            child: const Text("Xóa", style: TextStyle(color: Colors.red)),
+            child: const Text("Xóa"),
           ),
         ],
       ),
@@ -94,8 +97,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 Navigator.pop(ctx);
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-            child: const Text("Lưu", style: TextStyle(color: Colors.white)),
+            child: const Text("Lưu"),
           ),
         ],
       ),
@@ -124,59 +126,46 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
         ],
       ),
-      body: _chatSessions.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.history, size: 80, color: Colors.grey[300]),
-                  const SizedBox(height: 10),
-                  const Text("Chưa có lịch sử tư vấn nào",
-                      style: TextStyle(color: Colors.grey)),
-                ],
-              ),
-            )
-          : ListView.builder(
-              itemCount: _chatSessions.length,
-              itemBuilder: (context, index) {
-                final session = _chatSessions[index];
+      body: ListView.builder(
+        itemCount: _chatSessions.length,
+        itemBuilder: (context, index) {
+          final session = _chatSessions[index];
 
-                return HistoryCard(
-                  title: session['title']!,
-                  onTap: () async {
-                    // Lấy danh sách tin nhắn hiện tại
-                    final List<ChatMessage> currentMsgs =
-                        (session['messages'] as List<ChatMessage>?) ?? [];
+          return HistoryCard(
+            title: session['title']!,
+            onTap: () async {
+              // Lấy danh sách tin nhắn hiện tại
+              final List<ChatMessage> currentMsgs =
+                  (session['messages'] as List<ChatMessage>?) ?? [];
 
-                    // Mở ChatScreen và truyền tin nhắn cũ vào
-                    // Chờ kết quả trả về là danh sách tin nhắn mới nhất
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChatScreen(
-                          title: session['title']!,
-                          conversationId: session['id']!,
-                          initialMessages: currentMsgs,
-                        ),
-                      ),
-                    );
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatScreen(
+                    title: session['title']!,
+                    conversationId: session['id']!,
+                    initialMessages: currentMsgs,
+                  ),
+                ),
+              );
 
-                    // Nếu có dữ liệu trả về, cập nhật lại vào bộ nhớ
-                    if (result != null && result is List<ChatMessage>) {
-                      setState(() {
-                        _chatSessions[index]['messages'] = result;
-                      });
-                    }
-                  },
-                  onEdit: () => _renameSession(index),
-                  onDelete: () => _deleteSession(index),
-                );
-              },
-            ),
+              // Nếu có dữ liệu trả về, cập nhật lại vào bộ nhớ
+              if (result != null && result is List<ChatMessage>) {
+                setState(() {
+                  _chatSessions[index]['messages'] = result;
+                });
+              }
+            },
+            onEdit: () => _renameSession(index),
+            onDelete: () => _deleteSession(index),
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.teal,
         child: const Icon(Icons.add, color: Colors.white),
         onPressed: () async {
+          // Tạo ID mới
           final String newId =
               "session_${DateTime.now().millisecondsSinceEpoch}";
           final now = TimeOfDay.now();
@@ -193,9 +182,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           );
 
-          // Nếu có tin nhắn trả về
           if (result != null && result is List<ChatMessage>) {
-            // Thêm vào danh sách lịch sử
             _addNewSession(newTitle, newId, result);
           }
         },

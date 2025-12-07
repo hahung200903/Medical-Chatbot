@@ -5,13 +5,13 @@ import '../../services/chat_service.dart';
 class ChatScreen extends StatefulWidget {
   final String title;
   final String conversationId;
-  final List<ChatMessage> initialMessages;
+  final List<ChatMessage>? initialMessages;
 
   const ChatScreen({
     super.key,
     required this.title,
     required this.conversationId,
-    this.initialMessages = const [], // Mặc định là rỗng
+    this.initialMessages,
   });
 
   @override
@@ -21,183 +21,129 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final ChatService _chatService = ChatService();
 
-  final ChatUser _user = ChatUser(
-    id: 'user',
-    firstName: 'Bạn',
-  );
+  late final ChatUser user;
+  late final ChatUser bot;
 
-  final ChatUser _bot = ChatUser(
-    id: 'bot',
-    firstName: 'Bác sĩ AI',
-  );
+  List<ChatMessage> messages = [];
+  bool isTyping = false;
 
-  final TextEditingController _inputController = TextEditingController();
-  final FocusNode _inputFocus = FocusNode();
-
-  List<ChatMessage> _messages = [];
-  bool _isTyping = false;
+  bool waitingForFeedback = false;
 
   @override
   void initState() {
     super.initState();
-    // Nếu có tin nhắn cũ được truyền vào, load nó.
-    // Nếu không cuộc chat mới, thì hiển thị mặc định.
-    if (widget.initialMessages.isNotEmpty) {
-      _messages = List.from(widget.initialMessages);
+
+    user = ChatUser(id: '1', firstName: 'Tôi');
+    bot = ChatUser(
+      id: '2',
+      firstName: 'Bác sĩ AI',
+      profileImage: "https://cdn-icons-png.flaticon.com/512/3774/3774299.png",
+    );
+
+    if (widget.initialMessages != null && widget.initialMessages!.isNotEmpty) {
+      messages = List<ChatMessage>.from(widget.initialMessages!);
     } else {
-      _messages = [
+      messages = [
         ChatMessage(
           text:
-              'Chào bạn, tôi là trợ lý y tế ảo. Tôi có thể giúp gì cho bạn hôm nay?',
-          user: _bot,
+              "Chào bạn, tôi là trợ lý y tế ảo. Tôi có thể giúp gì cho bạn hôm nay?",
+          user: bot,
           createdAt: DateTime.now(),
         ),
       ];
     }
   }
 
-  @override
-  void dispose() {
-    _inputController.dispose();
-    _inputFocus.dispose();
-    super.dispose();
-  }
-
-  // Hàm xử lý khi nhấn nút Back trên AppBar
-  void _onBackPress() {
-    // Trả về danh sách tin nhắn hiện tại cho HistoryScreen
-    Navigator.pop(context, _messages);
-  }
-
-  Future<void> _sendFromInput() async {
-    final text = _inputController.text.trim();
-    if (text.isEmpty) return;
-
-    _inputController.clear();
-
-    final msg = ChatMessage(
-      text: text,
-      user: _user,
-      createdAt: DateTime.now(),
-    );
-
-    await _handleSend(msg);
-  }
-
-  Future<void> _handleSend(ChatMessage message) async {
+  void onSend(ChatMessage message) async {
     setState(() {
-      _messages.insert(0, message);
-      _isTyping = true;
+      messages.insert(0, message);
+      isTyping = true;
     });
 
-    try {
-      final String? replyText = await _chatService.sendMessage(
+    Map<String, dynamic> response;
+
+    /// Nếu đang chờ feedback
+    if (waitingForFeedback) {
+      response = await _chatService.sendFeedback(
+        feedback: message.text,
+        conversationId: widget.conversationId,
+      );
+    }
+
+    else {
+      response = await _chatService.sendMessage(
         text: message.text,
         conversationId: widget.conversationId,
       );
-
-      final String safeReplyText =
-          replyText ?? 'Xin lỗi, hiện không nhận được phản hồi từ máy chủ.';
-
-      final botReply = ChatMessage(
-        text: safeReplyText,
-        user: _bot,
-        createdAt: DateTime.now(),
-      );
-
-      setState(() {
-        _messages.insert(0, botReply);
-      });
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Có lỗi xảy ra, vui lòng thử lại.'),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isTyping = false;
-        });
-      }
     }
 
-    _inputFocus.requestFocus();
+    waitingForFeedback = response["needs_feedback"] == true;
+
+    if (!mounted) return;
+
+    setState(() {
+      isTyping = false;
+
+      messages.insert(
+        0,
+        ChatMessage(
+          text: response["answer"] ?? "Có lỗi xảy ra, vui lòng thử lại.",
+          user: bot,
+          createdAt: DateTime.now(),
+        ),
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (didPop) {
-        if (didPop) return;
-        _onBackPress();
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context, messages);
+        return false;
       },
       child: Scaffold(
         appBar: AppBar(
           title: Text(widget.title),
           backgroundColor: Colors.teal,
           foregroundColor: Colors.white,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: _onBackPress, // Gọi hàm trả dữ liệu về
-          ),
         ),
-        body: Column(
-          children: [
-            Expanded(
-              child: DashChat(
-                currentUser: _user,
-                messages: _messages,
-                onSend: (_) {},
-                readOnly: true,
-                typingUsers: _isTyping ? [_bot] : const [],
-                messageOptions: const MessageOptions(
-                  currentUserContainerColor: Colors.teal,
-                  containerColor: Colors.grey,
-                  textColor: Colors.white,
-                  showOtherUsersAvatar: true,
-                  showTime: true,
+        body: DashChat(
+          currentUser: user,
+          onSend: onSend,
+          messages: messages,
+          typingUsers: isTyping ? [bot] : [],
+          inputOptions: InputOptions(
+            inputDecoration: InputDecoration(
+              hintText: "Nhập triệu chứng hoặc câu hỏi...",
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: const BorderSide(
+                  color: Colors.teal,
+                  width: 1.4,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: const BorderSide(
+                  color: Colors.teal,
+                  width: 2,
                 ),
               ),
             ),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _inputController,
-                        focusNode: _inputFocus,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _sendFromInput(),
-                        decoration: InputDecoration(
-                          hintText: 'Nhập triệu chứng hoặc câu hỏi...',
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      onPressed: _sendFromInput,
-                      icon: const Icon(Icons.send),
-                      color: Colors.teal,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+          ),
+          messageOptions: const MessageOptions(
+            currentUserContainerColor: Colors.teal,
+            containerColor: Colors.grey,
+            textColor: Colors.white,
+            showOtherUsersAvatar: true,
+            showTime: true,
+          ),
         ),
       ),
     );
