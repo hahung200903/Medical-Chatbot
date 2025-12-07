@@ -12,7 +12,7 @@
     pip install -r requirements.txt
     ```
 
-2.  **Environment Variables (`.env có sẵn trong repo`):**
+2.  **Environment Variables (`.env`):**
     ```env
     PINECONE_API_KEY=your_key
     GOOGLE_API_KEY=your_gemini_key
