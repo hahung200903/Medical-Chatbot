@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ChatService {
-  static const String baseUrl = "http://34.205.252.57";
+  static const String baseUrl = "http://16.176.176.145";
 
   /// Gửi câu hỏi lần đầu
   Future<Map<String, dynamic>> sendMessage({
