@@ -30,6 +30,33 @@ class _HistoryScreenState extends State<HistoryScreen> {
     },
   ];
 
+  late TextEditingController _searchController;
+  List<Map<String, dynamic>> _filteredSessions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+
+    _filteredSessions = List.from(_chatSessions);
+
+    _searchController.addListener(() {
+      final keyword = _searchController.text.toLowerCase();
+      setState(() {
+        _filteredSessions = _chatSessions.where((session) {
+          final title = (session["title"] ?? "").toString().toLowerCase();
+          return title.contains(keyword);
+        }).toList();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   // Thêm session mới
   void _addNewSession(String title, String id, List<ChatMessage> messages) {
     setState(() {
@@ -41,10 +68,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
           "messages": messages,
         },
       );
+
+      final keyword = _searchController.text.toLowerCase();
+      _filteredSessions = _chatSessions.where((session) {
+        final t = (session["title"] ?? "").toString().toLowerCase();
+        return t.contains(keyword);
+      }).toList();
     });
   }
 
-  void _deleteSession(int index) {
+  void _deleteSession(Map<String, dynamic> session) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -59,7 +92,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ElevatedButton(
             onPressed: () {
               setState(() {
-                _chatSessions.removeAt(index);
+                final String id = session['id'] as String;
+
+                _chatSessions.removeWhere((s) => s['id'] == id);
+
+                final keyword = _searchController.text.toLowerCase();
+                _filteredSessions = _chatSessions.where((s) {
+                  final t = (s["title"] ?? "").toString().toLowerCase();
+                  return t.contains(keyword);
+                }).toList();
               });
               Navigator.pop(ctx);
             },
@@ -70,9 +111,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  void _renameSession(int index) {
+  void _renameSession(Map<String, dynamic> session) {
     final TextEditingController renameController =
-        TextEditingController(text: _chatSessions[index]['title']);
+        TextEditingController(text: session['title'] as String? ?? "");
 
     showDialog(
       context: context,
@@ -92,7 +133,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
             onPressed: () {
               if (renameController.text.trim().isNotEmpty) {
                 setState(() {
-                  _chatSessions[index]['title'] = renameController.text.trim();
+                  final String id = session['id'] as String;
+
+                  // Cập nhật trong danh sách gốc
+                  final masterIndex =
+                      _chatSessions.indexWhere((s) => s['id'] == id);
+                  if (masterIndex != -1) {
+                    _chatSessions[masterIndex]['title'] =
+                        renameController.text.trim();
+                  }
+
+                  // Cập nhật lại danh sách đã lọc theo search hiện tại
+                  final keyword = _searchController.text.toLowerCase();
+                  _filteredSessions = _chatSessions.where((s) {
+                    final t = (s["title"] ?? "").toString().toLowerCase();
+                    return t.contains(keyword);
+                  }).toList();
                 });
                 Navigator.pop(ctx);
               }
@@ -126,40 +182,80 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
         ],
       ),
-      body: ListView.builder(
-        itemCount: _chatSessions.length,
-        itemBuilder: (context, index) {
-          final session = _chatSessions[index];
-
-          return HistoryCard(
-            title: session['title']!,
-            onTap: () async {
-              // Lấy danh sách tin nhắn hiện tại
-              final List<ChatMessage> currentMsgs =
-                  (session['messages'] as List<ChatMessage>?) ?? [];
-
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChatScreen(
-                    title: session['title']!,
-                    conversationId: session['id']!,
-                    initialMessages: currentMsgs,
-                  ),
+      body: Column(
+        children: [
+          // Thanh tìm kiếm
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: "Tìm kiếm cuộc trò chuyện",
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
-              );
+              ),
+            ),
+          ),
+          Expanded(
+            child: _filteredSessions.isEmpty
+                ? const Center(
+                    child: Text("Không tìm thấy cuộc trò chuyện nào"),
+                  )
+                : ListView.builder(
+                    itemCount: _filteredSessions.length,
+                    itemBuilder: (context, index) {
+                      final session = _filteredSessions[index];
 
-              // Nếu có dữ liệu trả về, cập nhật lại vào bộ nhớ
-              if (result != null && result is List<ChatMessage>) {
-                setState(() {
-                  _chatSessions[index]['messages'] = result;
-                });
-              }
-            },
-            onEdit: () => _renameSession(index),
-            onDelete: () => _deleteSession(index),
-          );
-        },
+                      return HistoryCard(
+                        title: session['title'] as String,
+                        onTap: () async {
+                          // Lấy danh sách tin nhắn hiện tại
+                          final List<ChatMessage> currentMsgs =
+                              (session['messages'] as List<ChatMessage>?) ?? [];
+
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatScreen(
+                                title: session['title'] as String,
+                                conversationId: session['id'] as String,
+                                initialMessages: currentMsgs,
+                              ),
+                            ),
+                          );
+
+                          // Nếu có dữ liệu trả về, cập nhật lại vào bộ nhớ
+                          if (result != null &&
+                              result is List<ChatMessage>) {
+                            setState(() {
+                              final String id = session['id'] as String;
+
+                              // cập nhật trong danh sách gốc
+                              final masterIndex = _chatSessions
+                                  .indexWhere((s) => s['id'] == id);
+                              if (masterIndex != -1) {
+                                _chatSessions[masterIndex]['messages'] = result;
+                              }
+
+                              // cập nhật trong danh sách đã lọc
+                              _filteredSessions[index]['messages'] = result;
+                            });
+                          }
+                        },
+                        onEdit: () => _renameSession(session),
+                        onDelete: () => _deleteSession(session),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.teal,

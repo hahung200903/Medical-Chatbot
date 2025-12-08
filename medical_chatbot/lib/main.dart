@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'features/auth/login_screen.dart';
+import 'package:medical_chatbot/features/auth/login_screen.dart';
 
 void main() {
   runApp(const MedicalChatbotApp());
@@ -23,19 +23,19 @@ class MedicalChatbotApp extends StatelessWidget {
         ),
         useMaterial3: true,
 
-        // 2. Cấu hình mặc định cho tất cả AppBar
+        // 2. AppBar mặc định
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.teal,
           foregroundColor: Colors.white,
-          centerTitle: true, // Tự động căn giữa tiêu đề
+          centerTitle: true,
         ),
 
-        // 3. Cấu hình mặc định cho nút bấm (ElevatedButton)
+        // 3. Nút ElevatedButton
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.teal,
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
+            shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(10)),
             ),
           ),

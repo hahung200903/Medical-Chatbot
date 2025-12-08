@@ -1,11 +1,47 @@
 import 'package:flutter/material.dart';
-import '../../core/widgets/custom_text_field.dart';
-import '../../core/widgets/primary_button.dart';
-import '../history/history_screen.dart';
-import 'register_screen.dart';
+import 'package:medical_chatbot/core/widgets/custom_text_field.dart';
+import 'package:medical_chatbot/core/widgets/primary_button.dart';
+import 'package:medical_chatbot/features/history/history_screen.dart';
+import 'package:medical_chatbot/features/auth/register_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _handleLogin() {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Vui lòng nhập đầy đủ email và mật khẩu"),
+        ),
+      );
+      return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const HistoryScreen(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,33 +57,42 @@ class LoginScreen extends StatelessWidget {
             const Text(
               "Medical Assistant",
               style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal),
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal,
+              ),
             ),
             const SizedBox(height: 40),
-            const CustomTextField(label: "Email", icon: Icons.email),
+
+            // Email
+            CustomTextField(
+              label: "Email",
+              icon: Icons.email,
+              controller: _emailController,
+            ),
             const SizedBox(height: 15),
-            const CustomTextField(
-                label: "Mật khẩu", icon: Icons.lock, isPassword: true),
+
+            // Mật khẩu
+            CustomTextField(
+              label: "Mật khẩu",
+              icon: Icons.lock,
+              isPassword: true,
+              controller: _passwordController,
+            ),
             const SizedBox(height: 30),
+
             PrimaryButton(
               text: "Đăng nhập",
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const HistoryScreen()),
-                );
-              },
+              onPressed: _handleLogin,
             ),
+
             TextButton(
               onPressed: () {
-                // Chuyển sang màn hình Đăng ký
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const RegisterScreen()),
+                    builder: (context) => const RegisterScreen(),
+                  ),
                 );
               },
               child: const Text("Chưa có tài khoản? Đăng ký ngay"),
